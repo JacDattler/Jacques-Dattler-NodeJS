@@ -5,11 +5,11 @@ const router = express.Router();
 const port = 3000;
 
 router.get("/api/get", function(req, res) {
-   res.send("Jac ist tool");
+   res.send("Test1");
 });
 
 router.get("/api/get2", function(req, res) {
-    res.send("Elias ist tool");
+    res.send("Test2");
 });
 
 router.get("/route/find/:from/:to", function(req, res) {
