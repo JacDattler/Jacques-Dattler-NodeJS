@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>1Flugsuche</title>
+
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.2/dist/leaflet.css">
+
+    <script src="https://unpkg.com/leaflet@1.3.2/dist/leaflet.js"></script>
+</head>
+<body>
+
+    <div id="waitOverlayWrapper" style="display: none;">
+        <div id="waitOverlayContent">
+            <img src="static/media/black-plane.png" id="waitPlane">
+
+            <p class="text-center" style="margin-top:2.8em;">
+                Bitte warten...
+            </p>
+        </div>
+    </div>
+
+    <div class="headerBar">
+        <form action="http://flights.eliashenrich.de/form.php" method="POST" class="text-center" onsubmit="return showOverlay()">
+            von
+            <input type="text" name="origin" value="SYD" placeholder="von" class="text-center">
+            nach
+            <input type="text" name="destination" value="LAX" placeholder="nach" class="text-center">
+            <input type="submit" value="Suchen">
+        </form>
+    </div>
+
+    <div class="contentWrapper">
+        <div class="contentLeft">
+            <h1>
+                Das ist der Header
+            </h1>
+
+            <ul class="flightList" id="flightList">
+                <li class="hidden" id="listDummy">
+                    <span class="flightFrom"></span> -> <span class="flightTo"></span>
+                    <span class="timeDeparture">13:00</span> <span class="timeArrival">17:00</span>
+                </li>
+            </ul>
+
+        </div>
+        <div class="contentRight">
+            <div id="mapid"></div>
+        </div>
+    </div>
+
+    <script>
+
+        function FlightSearchAPI() {
+            this.endpoint = 'http://localhost:3000';
+
+            this.requestAPI = function(action, callback) {
+                var url = this.endpoint + action;
+
+                var request = new XMLHttpRequest();
+
+                request.onreadystatechange = function() {
+                    console.log("Status hat sich geändert", this.readyState);
+
+                    // Ist die Anfrage beendet?
+                    if (this.readyState === 4) {
+                        // Http-Statuscode prüfen
+                        if (this.status === 200) {
+                            console.log("Anfrage erfolgreich");
+                            console.log(this.responseText);
+
+                            callback(this.responseText);
+                        }
+                    }
+                };
+
+                request.open('GET', url, true);
+                request.send();
+            };
+        }
+
+        var flightSearch = new FlightSearchAPI();
+        flightSearch.requestAPI('/route/find/25/23', successCallback);
+
+        function successCallback(data) {
+            var response = JSON.parse(data);
+
+            for (var i = 0; i < response.length; i++) {
+                var flug = response[i];
+
+                console.log("Flug " + i);
+
+                for (var j = 0; j < flug.length; j++) {
+                    var leg = flug[j];
+
+                    console.log("Leg " + j, leg);
+
+                    var airportFrom = leg.airportFrom.CityName;
+                    var airportTo = leg.airportTo.CityName;
+
+                    addListItem(airportFrom, airportTo);
+                }
+
+            }
+        }
+
+        function showOverlay() {
+            addListItem("19:30");
+            return false;
+
+            var element = document.getElementById('waitOverlayWrapper');
+            element.style.display = "block";
+
+            return false;
+        }
+
+        function hideOverlay() {
+            var element = document.getElementById('waitOverlayWrapper');
+            element.style.display = 'none';
+        }
+
+        function addListItem(airportFrom, airportTo) {
+            var listItem = document.getElementById('listDummy');
+
+            // Listenelement klonen und neu einfügen
+            var newListItem = listItem.cloneNode(true);
+            newListItem.setAttribute('id', '');
+            newListItem.classList.remove('hidden');
+
+            // Kindelement des neuen Knotens bearbeiten
+            newListItem.getElementsByClassName('flightFrom')[0].innerText = airportFrom;
+            newListItem.getElementsByClassName('flightTo')[0].innerText = airportTo;
+
+            // airportFrom & airportTo setzen
+
+            document.getElementById('flightList').appendChild(newListItem);
+        }
+
+        function initMap() {
+            const accessToken = 'pk.eyJ1IjoiZWxrcm9rZXR0byIsImEiOiJjamplZ2NqODQybG4wM3F0ZTU0N2s4azdxIn0.VL6YIZWFhnan5AWzxgIFpw';
+            const url = "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}";
+
+            let mapObject = L.map('mapid', {
+                center: [-10.0, -170.0],
+                zoom: 4
+            });
+
+            L.tileLayer(url, {
+                attribution: 'Copyright-Hinweise...',
+                maxZoom: 18,
+                id: 'mapbox.streets',
+                accessToken: accessToken
+            }).addTo(mapObject);
+        }
+
+        initMap();
+    </script>
+
+
+
+</body>
+</html>
